@@ -1,4 +1,4 @@
-using Flux 
+using Flux, DataStructures
 using Pipe: @pipe
 include("utils.jl")
 
@@ -46,24 +46,29 @@ end
 Flux.@functor UNet
 
 function UNet(channels::Int, nclasses::Int, filters=[32, 64, 128, 256, 512])
-    @assert length(filters) == 5
-    encoder_blocks = vcat([EncoderBlock(channels, filters[1])], [EncoderBlock(filters[i], filters[i+1]) for i in 1:4])
-    decoder_blocks = [DecoderBlock(filters[i]+filters[i+1], filters[i]) for i in 1:4]
+    layers = length(filters)
+    encoder_filters = vcat(channels, filters)
+    encoder_blocks = [EncoderBlock(encoder_filters[i], encoder_filters[i+1]) for i in 1:layers]
+    decoder_blocks = [DecoderBlock(filters[i]+filters[i+1], filters[i]) for i in 1:layers-1]
     activation = Chain(Conv((3, 3), filters[1]=>nclasses, pad=SamePad()), x -> softmax(x, dims=3))
     UNet(encoder_blocks, decoder_blocks, activation)
 end
 
 function (l::UNet)(x)
-    x1, skip1 = l.encoder_blocks[1](x)
-    x2, skip2 = l.encoder_blocks[2](x1)
-    x3, skip3 = l.encoder_blocks[3](x2)
-    x4, skip4 = l.encoder_blocks[4](x3)
-    _, out = l.encoder_blocks[5](x4)
+    # Forward Pass Through Encoder
+    skips = nil()
+    layers = length(l.encoder_blocks)
+    for i in 1:layers-1
+        x, skip = l.encoder_blocks[i](x)
+        skips = cons(skip, skips)
+    end
+    _, x = l.encoder_blocks[end](x)
 
-    up1 = l.decoder_blocks[4](out, skip4)
-    up2 = l.decoder_blocks[3](up1, skip3)
-    up3 = l.decoder_blocks[2](up2, skip2)
-    up4 = l.decoder_blocks[1](up3, skip1)
+    # Forward Pass Through Decoder
+    for (i, skip) in enumerate(skips)
+        x = l.decoder_blocks[layers-i](x, skip)
+    end
 
-    return l.activation(up4)
+    # Activation Layer
+    return l.activation(x)
 end

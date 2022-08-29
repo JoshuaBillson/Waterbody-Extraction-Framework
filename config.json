@@ -1,7 +1,7 @@
 {
-    "experiment": "DeepLabV3.2", 
-    "model": "DeepLabV3+", 
-    "batch_size" : 1, 
+    "experiment": "U-Net.4", 
+    "model": "U-Net", 
+    "batch_size" : 2, 
     "learning_rate": 1e-4, 
     "loss": "dice", 
     "epochs": 10

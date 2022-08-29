@@ -25,7 +25,7 @@ Take a prediction tensor produced by pixel-wise softmax and transform it into a 
 `ŷ`: The prediction to be cast into a mask.
 """
 function prediction_to_mask(ŷ::Array{Float32,4})
-	(mapslices(argmax, ŷ, dims=3) .|> Float32) .- 1.0f0
+    (mapslices(argmax, ŷ, dims=3) .|> Float32) .- 1.0f0
 end
 
 """
@@ -36,16 +36,16 @@ The resulting plot will consist of 5 sub-plots in a single row in the order of R
 `tile`: The tile for which we want to make the prediction.  
 """
 function show_prediction(model, tile::Int)
-	# Plot Features
-	rgb_plot = read_rgb(tile) |> plot_color
-	nir_plot = read_nir(tile) |> plot_gray
-	swir_plot = read_swir(tile) |> plot_gray
-	mask_plot = read_mask(tile) |> plot_gray
-	
-	# Plot Prediction
-	x, _ = Pipelines.ImagePipeline([tile])[1]
+    # Plot Features
+    rgb_plot = read_rgb(tile) |> plot_color
+    nir_plot = read_nir(tile) |> plot_gray
+    swir_plot = read_swir(tile) |> plot_gray
+    mask_plot = read_mask(tile) |> plot_gray
+    
+    # Plot Prediction
+    x, _ = Pipelines.ImagePipeline([tile])[1]
     prediction_plot = @pipe model(x) |> Array |> prediction_to_mask(_)[:,:,:,1] |> plot_gray
 
-	# Plot Features And Prediction
-	showimg([rgb_plot, nir_plot, swir_plot, mask_plot, prediction_plot], (5000, 1000), (1, 5))
+    # Plot Features And Prediction
+    showimg([rgb_plot, nir_plot, swir_plot, mask_plot, prediction_plot], (5000, 1000), (1, 5))
 end
